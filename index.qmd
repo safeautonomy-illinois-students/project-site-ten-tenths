@@ -1,5 +1,5 @@
 ---
-pagetitle: "Your Project Title"
+pagetitle: "Ten Tenths — ECE484"
 format:
   html:
     toc: false
@@ -8,10 +8,11 @@ format:
 
 ::: {.hero-section}
 
-# Your Project Title Here {.title}
+# Ten Tenths {.title}
 
 ::: {.subtitle}
-A catchy one-line description of your project
+Autonomous lap racing on a pre-known floor-line track — no LiDAR, no SLAM.
+Pure Pursuit steering · PI velocity control · curvature-based localisation · 1:10 scale F1Tenth
 :::
 
 ::: {.author-list}
@@ -24,13 +25,13 @@ A catchy one-line description of your project
 
 ::: {.affiliation-list}
 
-University of Illinois Urbana-Champaign,  ECE 484
+University of Illinois Urbana-Champaign · ECE 484 · Spring 2026
 
 :::
 
 ::: {.button-row}
 
-[[{{< fa video >}} Video]{.btn-text}](https://www.youtube.com/watch?v=cSQTZoZPJzs){.btn .btn-primary}
+[[{{< fa video >}} Video]{.btn-text}](#video){.btn .btn-primary}
 [[{{< fa brands github >}} Code]{.btn-text}](https://github.com/){.btn .btn-primary}
 
 :::
@@ -39,19 +40,128 @@ University of Illinois Urbana-Champaign,  ECE 484
 
 
 <!-- ============================================================ -->
-<!-- TEASER IMAGE / VIDEO -->
+<!-- TEASER — System Architecture Block Diagram                   -->
 <!-- ============================================================ -->
 
 ::: {.section-container}
 
 ::: {.hero-teaser}
 
-<!-- Option A: Use a static image as the teaser -->
-![Teaser figure showing your method overview or key result.](static/images/placeholder-teaser.svg){.teaser-img}
+```{=html}
+<svg viewBox="0 0 960 380" xmlns="http://www.w3.org/2000/svg" width="100%"
+     style="max-width:960px;display:block;margin:0 auto;border-radius:10px;box-shadow:0 4px 24px rgba(0,0,0,0.08)">
+  <defs>
+    <marker id="arr" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#8fa3c0"/>
+    </marker>
+    <marker id="arr-blue" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#00d4ff"/>
+    </marker>
+  </defs>
 
-<!-- Option B: Embed a video teaser (uncomment below, comment out image above)
-{{< video static/videos/teaser.mp4 >}}
--->
+  <!-- background -->
+  <rect width="960" height="380" fill="#0a0e17" rx="10"/>
+
+  <!-- OFFLINE column -->
+  <rect x="10" y="10" width="160" height="360" rx="6" fill="#141b28" stroke="#2a3a55" stroke-width="1"/>
+  <text x="90" y="35" text-anchor="middle" font-family="monospace" font-size="9" fill="#5a7090" letter-spacing="2">OFFLINE</text>
+  <rect x="25" y="48" width="130" height="44" rx="4" fill="#1a2235" stroke="#2563eb" stroke-width="1"/>
+  <text x="90" y="66" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#e8edf5">Track Geometry</text>
+  <text x="90" y="82" text-anchor="middle" font-family="monospace" font-size="9" fill="#8fa3c0">Layout File</text>
+  <rect x="25" y="108" width="130" height="44" rx="4" fill="#1a2235" stroke="#2563eb" stroke-width="1"/>
+  <text x="90" y="126" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#e8edf5">κ(s) Profile</text>
+  <text x="90" y="142" text-anchor="middle" font-family="monospace" font-size="9" fill="#8fa3c0">Curvature Fingerprint</text>
+  <rect x="25" y="168" width="130" height="44" rx="4" fill="#1a2235" stroke="#2563eb" stroke-width="1"/>
+  <text x="90" y="186" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#e8edf5">Racing Line</text>
+  <text x="90" y="202" text-anchor="middle" font-family="monospace" font-size="9" fill="#8fa3c0">Min-Curvature QP</text>
+  <rect x="25" y="228" width="130" height="44" rx="4" fill="#1a2235" stroke="#2563eb" stroke-width="1"/>
+  <text x="90" y="246" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#e8edf5">IPM Homography</text>
+  <text x="90" y="262" text-anchor="middle" font-family="monospace" font-size="9" fill="#8fa3c0">H matrix</text>
+  <line x1="90" y1="92" x2="90" y2="108" stroke="#2a3a55" stroke-width="1.5" marker-end="url(#arr)"/>
+  <line x1="90" y1="152" x2="90" y2="168" stroke="#2a3a55" stroke-width="1.5" marker-end="url(#arr)"/>
+  <line x1="90" y1="212" x2="90" y2="228" stroke="#2a3a55" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- PERCEPTION column -->
+  <rect x="196" y="10" width="160" height="360" rx="6" fill="#141b28" stroke="#2a3a55" stroke-width="1"/>
+  <text x="276" y="35" text-anchor="middle" font-family="monospace" font-size="9" fill="#00d4ff" letter-spacing="2">PERCEPTION</text>
+  <rect x="211" y="48" width="130" height="44" rx="4" fill="#1a2235" stroke="#00d4ff" stroke-width="1.5"/>
+  <text x="276" y="66" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#e8edf5">Stereo Camera</text>
+  <text x="276" y="82" text-anchor="middle" font-family="monospace" font-size="9" fill="#00d4ff">D435i / ZED 2</text>
+  <rect x="211" y="108" width="130" height="44" rx="4" fill="#1a2235" stroke="#00d4ff" stroke-width="1.5"/>
+  <text x="276" y="126" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#e8edf5">IPM Warp</text>
+  <text x="276" y="142" text-anchor="middle" font-family="monospace" font-size="9" fill="#00d4ff">Bird's-Eye View</text>
+  <rect x="211" y="168" width="130" height="44" rx="4" fill="#1a2235" stroke="#00d4ff" stroke-width="1.5"/>
+  <text x="276" y="186" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#e8edf5">Lane Segmentation</text>
+  <text x="276" y="202" text-anchor="middle" font-family="monospace" font-size="9" fill="#00d4ff">Adaptive Threshold</text>
+  <rect x="211" y="228" width="130" height="44" rx="4" fill="#1a2235" stroke="#00d4ff" stroke-width="1.5"/>
+  <text x="276" y="246" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#e8edf5">Polynomial Fit</text>
+  <text x="276" y="262" text-anchor="middle" font-family="monospace" font-size="9" fill="#00d4ff">d, ψe, κ_obs</text>
+  <line x1="276" y1="92" x2="276" y2="108" stroke="#00d4ff" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arr-blue)"/>
+  <line x1="276" y1="152" x2="276" y2="168" stroke="#00d4ff" stroke-width="1.5" marker-end="url(#arr-blue)"/>
+  <line x1="276" y1="212" x2="276" y2="228" stroke="#00d4ff" stroke-width="1.5" marker-end="url(#arr-blue)"/>
+  <line x1="155" y1="250" x2="211" y2="180" stroke="#2563eb" stroke-width="1" stroke-dasharray="5,3" marker-end="url(#arr)"/>
+
+  <!-- LOCALISE column -->
+  <rect x="382" y="10" width="160" height="360" rx="6" fill="#141b28" stroke="#2a3a55" stroke-width="1"/>
+  <text x="462" y="35" text-anchor="middle" font-family="monospace" font-size="9" fill="#7fff6b" letter-spacing="2">LOCALISE</text>
+  <rect x="397" y="48" width="130" height="44" rx="4" fill="#1a2235" stroke="#7fff6b" stroke-width="1.5"/>
+  <text x="462" y="66" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#e8edf5">Wheel Encoder</text>
+  <text x="462" y="82" text-anchor="middle" font-family="monospace" font-size="9" fill="#7fff6b">VESC → v [m/s]</text>
+  <rect x="397" y="108" width="130" height="44" rx="4" fill="#1a2235" stroke="#7fff6b" stroke-width="1.5"/>
+  <text x="462" y="126" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#e8edf5">IMU Gyroscope</text>
+  <text x="462" y="142" text-anchor="middle" font-family="monospace" font-size="9" fill="#7fff6b">Yaw rate ψ̇</text>
+  <rect x="397" y="168" width="130" height="44" rx="4" fill="#1a2235" stroke="#7fff6b" stroke-width="2"/>
+  <text x="462" y="186" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#e8edf5">1D Particle Filter</text>
+  <text x="462" y="202" text-anchor="middle" font-family="monospace" font-size="9" fill="#7fff6b">κ_obs vs κ_ref(s) → s</text>
+  <rect x="397" y="228" width="130" height="44" rx="4" fill="#1a2235" stroke="#7fff6b" stroke-width="2"/>
+  <text x="462" y="246" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#e8edf5">EKF Fusion</text>
+  <text x="462" y="262" text-anchor="middle" font-family="monospace" font-size="9" fill="#7fff6b">[s, d, ψe, v] @ 200Hz</text>
+  <line x1="462" y1="92" x2="462" y2="108" stroke="#7fff6b" stroke-width="1.5" marker-end="url(#arr)"/>
+  <line x1="462" y1="152" x2="462" y2="168" stroke="#7fff6b" stroke-width="1.5" marker-end="url(#arr)"/>
+  <line x1="462" y1="212" x2="462" y2="228" stroke="#7fff6b" stroke-width="1.5" marker-end="url(#arr)"/>
+  <line x1="341" y1="262" x2="397" y2="190" stroke="#00d4ff" stroke-width="1.2" marker-end="url(#arr-blue)"/>
+  <line x1="155" y1="130" x2="397" y2="180" stroke="#2563eb" stroke-width="1" stroke-dasharray="5,3" marker-end="url(#arr)"/>
+
+  <!-- PLANNING column -->
+  <rect x="568" y="10" width="160" height="360" rx="6" fill="#141b28" stroke="#2a3a55" stroke-width="1"/>
+  <text x="648" y="35" text-anchor="middle" font-family="monospace" font-size="9" fill="#ffd166" letter-spacing="2">PLANNING</text>
+  <rect x="583" y="48" width="130" height="44" rx="4" fill="#1a2235" stroke="#ffd166" stroke-width="1.5"/>
+  <text x="648" y="66" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#e8edf5">v_ref Lookup</text>
+  <text x="648" y="82" text-anchor="middle" font-family="monospace" font-size="9" fill="#ffd166">v_ref(s) profile</text>
+  <rect x="583" y="108" width="130" height="44" rx="4" fill="#1a2235" stroke="#ffd166" stroke-width="1.5"/>
+  <text x="648" y="126" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#e8edf5">Waypoint Lookup</text>
+  <text x="648" y="142" text-anchor="middle" font-family="monospace" font-size="9" fill="#ffd166">Racing line @ s</text>
+  <rect x="583" y="168" width="130" height="44" rx="4" fill="#1a2235" stroke="#ffd166" stroke-width="2"/>
+  <text x="648" y="186" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#e8edf5">Goal Point Select</text>
+  <text x="648" y="202" text-anchor="middle" font-family="monospace" font-size="9" fill="#ffd166">Lookahead L_d(v,κ)</text>
+  <line x1="527" y1="250" x2="583" y2="180" stroke="#7fff6b" stroke-width="1.2" marker-end="url(#arr)"/>
+  <line x1="155" y1="190" x2="583" y2="115" stroke="#2563eb" stroke-width="1" stroke-dasharray="5,3" marker-end="url(#arr)"/>
+
+  <!-- CONTROL column -->
+  <rect x="754" y="10" width="192" height="360" rx="6" fill="#141b28" stroke="#2a3a55" stroke-width="1"/>
+  <text x="850" y="35" text-anchor="middle" font-family="monospace" font-size="9" fill="#ff6b35" letter-spacing="2">CONTROL</text>
+  <rect x="769" y="48" width="162" height="44" rx="4" fill="#1a2235" stroke="#ff6b35" stroke-width="2"/>
+  <text x="850" y="66" text-anchor="middle" font-family="sans-serif" font-size="12" font-weight="600" fill="#ff6b35">Pure Pursuit</text>
+  <text x="850" y="82" text-anchor="middle" font-family="monospace" font-size="9" fill="#8fa3c0">δ = atan(2L·sin α / L_d)</text>
+  <rect x="769" y="108" width="162" height="44" rx="4" fill="#1a2235" stroke="#ff6b35" stroke-width="2"/>
+  <text x="850" y="126" text-anchor="middle" font-family="sans-serif" font-size="12" font-weight="600" fill="#ff6b35">PI Velocity</text>
+  <text x="850" y="142" text-anchor="middle" font-family="monospace" font-size="9" fill="#8fa3c0">a = Kp·e + Ki·∫e dt</text>
+  <rect x="769" y="168" width="162" height="44" rx="4" fill="#1a2235" stroke="#ff6b35" stroke-width="1.5"/>
+  <text x="850" y="186" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#e8edf5">VESC Driver</text>
+  <text x="850" y="202" text-anchor="middle" font-family="monospace" font-size="9" fill="#8fa3c0">ERPM + Servo angle</text>
+  <rect x="769" y="228" width="162" height="44" rx="4" fill="#1f2940" stroke="#ff6b35" stroke-width="1.5"/>
+  <text x="850" y="246" text-anchor="middle" font-family="sans-serif" font-size="12" font-weight="600" fill="#e8edf5">Ten Tenths</text>
+  <text x="850" y="262" text-anchor="middle" font-family="monospace" font-size="9" fill="#8fa3c0">Physical Plant</text>
+  <line x1="850" y1="92" x2="850" y2="108" stroke="#ff6b35" stroke-width="1.5" marker-end="url(#arr)"/>
+  <line x1="850" y1="152" x2="850" y2="168" stroke="#ff6b35" stroke-width="1.5" marker-end="url(#arr)"/>
+  <line x1="850" y1="212" x2="850" y2="228" stroke="#ff6b35" stroke-width="1.5" marker-end="url(#arr)"/>
+  <line x1="728" y1="140" x2="769" y2="70" stroke="#ffd166" stroke-width="1.2" marker-end="url(#arr)"/>
+  <line x1="728" y1="190" x2="769" y2="125" stroke="#ffd166" stroke-width="1.2" marker-end="url(#arr)"/>
+  <line x1="341" y1="250" x2="769" y2="70" stroke="#00d4ff" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arr-blue)"/>
+</svg>
+```
+
+*System architecture — data flows from offline preprocessing (left) through perception, localisation, and planning to the control outputs (right).*
 
 :::
 
@@ -59,36 +169,35 @@ University of Illinois Urbana-Champaign,  ECE 484
 
 
 <!-- ============================================================ -->
-<!-- ABSTRACT -->
+<!-- ABSTRACT / PROBLEM STATEMENT                                 -->
 <!-- ============================================================ -->
 
 ::: {.section-container}
 
-## Abstract {.section-title}
+## Problem Statement {.section-title}
 
 ::: {.abstract-text}
-Replace this text with your project abstract. Describe the problem you are
-solving, the key insight or contribution of your work, and the main results.
-Keep it concise — typically 150–250 words. You can use **bold** and *italic*
-formatting to emphasize key terms.
+We present **Ten Tenths**, a perception and control stack for autonomous lap racing on a 1:10 scale F1Tenth car. The platform is a Traxxas Slash 4x4 (~4 kg) running an NVIDIA Jetson compute board, a VESC motor controller, and a stereo camera as the sole exteroceptive sensor.
 
-For example: We present a novel approach to [task] that achieves
-state-of-the-art results on [benchmark]. Our method leverages [key technique]
-to overcome [limitation of prior work]. Experiments demonstrate that our
-approach outperforms existing methods by [metric improvement] while requiring
-[efficiency gain].
+The competition environment uses painted or taped floor lines as the only identifiable visual landmarks — no walls, cones, or 3D features suitable for LiDAR or SLAM. The full track geometry (boundaries and centreline) is provided as a data file before racing, eliminating the need for online mapping.
+
+The system addresses three core objectives:
+
+1. **Lateral localisation** — estimate cross-track error *d* and heading error *ψ_e* in real time from camera images using Inverse Perspective Mapping and polynomial lane fitting.
+2. **Longitudinal localisation** — estimate arc-length progress *s* along the track by matching observed lane curvature against a pre-computed curvature profile κ(s) using a 1D particle filter.
+3. **Racing line tracking** — follow the minimum-curvature optimised racing line at maximum safe speed using Pure Pursuit lateral control and a PI velocity controller tracking v_ref(s).
 :::
 
 :::
 
 
 <!-- ============================================================ -->
-<!-- OVERVIEW / METHOD VIDEO -->
+<!-- VIDEO                                                        -->
 <!-- ============================================================ -->
 
 ::: {.section-container}
 
-## Video {.section-title}
+## Video {#video .section-title}
 
 ::: {.video-container}
 <!-- Replace with your YouTube or local video embed -->
@@ -99,7 +208,151 @@ approach outperforms existing methods by [metric improvement] while requiring
 
 
 <!-- ============================================================ -->
-<!-- RESULTS GALLERY -->
+<!-- ALGORITHMS                                                   -->
+<!-- ============================================================ -->
+
+::: {.section-container}
+
+## Algorithms {.section-title}
+
+::: {.content-text}
+
+### Inverse Perspective Mapping (Perception)
+
+A homographic warp transforms the perspective camera image into a flat top-down bird's-eye view (BEV). Parallel floor lines that converge at the horizon in the camera frame appear as parallel vertical stripes in BEV — making polynomial lane fitting stable and metric. A 3×3 homography matrix **H** is computed once offline using known floor-plane point correspondences.
+
+```python
+BEV_img = cv2.warpPerspective(rect_img, H, (W, H_bev))
+# H calibrated using: H, _ = cv2.findHomography(pixel_pts, ground_pts_m)
+```
+
+*Ref: Bertozzi & Broggi (1998). GOLD. IEEE Trans. Image Processing 7(1).*
+
+---
+
+### Lane Detection & State Extraction (Perception)
+
+After IPM, lane pixels are segmented via adaptive thresholding with CLAHE preprocessing. A quadratic polynomial is fitted to each lane boundary; the centreline is the average of the two fits. Three control-relevant quantities are derived at every camera frame:
+
+```python
+d     = x_centre(y=0)                         # cross-track error [m]
+psi_e = atan2(x_centre'(0), 1)               # heading error [rad]
+k_obs = x_centre''(y) / (1+x_centre'**2)**1.5 # observed curvature [1/m]
+```
+
+*Ref: Wang et al. (2018). LaneNet. arXiv:1807.01726.*
+
+---
+
+### 1D Particle Filter — Curvature Matching (Localisation)
+
+Arc-length position *s* is estimated by a 1D sequential Monte Carlo filter. Each particle represents a hypothesis about *s*. The **prediction** step propagates particles using wheel velocity; the **update** step weights particles by how well the stored κ_ref(s) matches the observed κ_obs. The track curvature profile κ(s) is a unique geometric fingerprint — each corner narrows the particle distribution.
+
+```python
+# Prediction:  s_i ← (s_i + v·dt + N(0, σ_proc)) mod L
+# Update:      w_i ← w_i · N(κ_obs; κ_ref(s_i), σ_meas)
+# Estimate:    s_hat = Σ w_i · s_i
+# σ_proc ≈ 0.02 m,  σ_meas ≈ 0.05 m⁻¹  (tune empirically)
+```
+
+*Ref: Thrun, Burgard & Fox (2005). Probabilistic Robotics. MIT Press. Ch. 4.*
+
+---
+
+### Extended Kalman Filter Fusion (Localisation)
+
+The `robot_localization` EKF node fuses wheel odometry, IMU gyroscope, IPM lane state (d, ψ_e), and the particle filter *s* estimate into a smooth continuous-time state at 200 Hz. The non-holonomic constraint (zero lateral wheel velocity) is applied as a virtual measurement, suppressing lateral drift between camera frames.
+
+```
+State:  X = [x, y, ψ, v]
+Inputs: /wheel_odom, /imu/data, /lane_state (d, ψe), /arc_length (s)
+Output: /frenet_state @ 200 Hz  →  [s, d, ψe, v]
+```
+
+*Ref: Moore & Stouch (2014). robot_localization. IIAS.*
+
+---
+
+### Minimum-Curvature Trajectory Optimisation (Planning)
+
+The offline racing line is computed by solving a quadratic program (QP) that minimises the integral of squared curvature along the path, subject to track boundary constraints. This produces the smoothest possible line through the track, reducing required lateral acceleration and allowing higher cornering speeds.
+
+```
+min   ∫ κ(s)² ds
+s.t.  path stays within left/right boundaries
+      v_ref(s) = min(v_max, sqrt(a_lat_max / max(|κ(s)|, ε)))
+```
+
+*Ref: Heilmeier et al. (2020). Vehicle System Dynamics 58(10). doi:10.1080/00423114.2019.1631455*
+
+:::
+
+:::
+
+
+<!-- ============================================================ -->
+<!-- CONTROL                                                      -->
+<!-- ============================================================ -->
+
+::: {.section-container}
+
+## Control — Pure Pursuit + PI Velocity {.section-title}
+
+::: {.content-text}
+
+### Pure Pursuit (Lateral)
+
+Pure Pursuit is a geometric path-tracking law that steers the car toward a **goal point** on the racing line at a lookahead distance L_d ahead of the vehicle.
+
+**Step 1 — Find closest waypoint.** Using the current *s* estimate from the particle filter, locate the closest racing-line waypoint in O(1) via a pre-sorted arc-length index.
+
+**Step 2 — Select goal point.** Scan forward along the racing line until the Euclidean distance from the car exceeds L_d. This is the goal point (g_x, g_y).
+
+**Step 3 — Compute steering angle.** Transform the goal point into the vehicle's local frame. The angle α between heading and the lookahead vector gives the steering command directly from geometry.
+
+```python
+alpha  = atan2(goal_y_local, goal_x_local)  # angle to goal in vehicle frame
+kappa  = 2 * sin(alpha) / L_d               # required path curvature
+delta  = atan(kappa * L_wb)                 # Ackermann steering angle [rad]
+```
+
+**Adaptive lookahead** — L_d scales with speed and track curvature:
+
+| Condition | L_d | Effect |
+|---|---|---|
+| v < 2 m/s | 0.5 m (minimum) | Tight tracking at low speed |
+| v = 4 m/s | 1.5 – 2.0 m | Balanced stability/accuracy |
+| v = 7 m/s | 2.5 – 3.5 m | Smooth high-speed line |
+| High \|κ(s)\| | Reduce by 20–30% | Tighter corner tracking |
+| Straight \|κ\|≈0 | Increase to v · k_gain | Maximum straight speed |
+
+*Rule: `L_d = clip(k · v, L_min, L_max) + κ_correction`*
+*Ref: Coulter (1992). CMU-RI-TR-92-01. / Sukhil & Behl (2021). arXiv:2111.08873.*
+
+---
+
+### PI Velocity Controller (Longitudinal)
+
+A PI controller tracks v_ref(s) — the target speed at the current arc-length position, looked up from the offline racing-line velocity profile. The integral term eliminates steady-state speed error. Anti-windup clamping prevents integrator overshoot during braking.
+
+```python
+e_v   = v_ref(s_est) - v_measured                 # speed error [m/s]
+I_v   = clip(I_v + Ki * e_v * dt, -I_max, I_max)  # anti-windup
+a_cmd = Kp * e_v + I_v                            # throttle/brake command
+# Send a_cmd to VESC as target ERPM via vesc_driver
+```
+
+- **Kp** — sets acceleration aggressiveness toward v_ref. Start at Kp ≈ 0.5, increase until slight overshoot, then reduce 20%.
+- **Ki** — eliminates steady-state speed error under friction load. Recommended Ki ≈ 0.1–0.3. Always pair with anti-windup clamping.
+- **v_ref source** — look up from the *closest waypoint* to the car, not the lookahead point. Using the lookahead point's speed causes premature braking before corners.
+
+:::
+
+:::
+
+
+<!-- ============================================================ -->
+<!-- RESULTS / PROGRESS                                          -->
 <!-- ============================================================ -->
 
 ::: {.section-container}
@@ -107,92 +360,64 @@ approach outperforms existing methods by [metric improvement] while requiring
 ## Results {.section-title}
 
 ::: {.content-text}
-Provide a brief description of the results shown below. Explain what the
-reader should observe and why it matters.
+The system is currently under active development and hardware integration. The simulator baseline achieves stable lane-following laps at 3 m/s using Pure Pursuit with fixed lookahead. Below is the current software progress across all subsystems.
 :::
 
-::: {.results-grid}
-
-::: {.result-card}
-![Result 1 caption](static/images/placeholder-result1.svg)
-:::
-
-::: {.result-card}
-![Result 2 caption](static/images/placeholder-result2.svg)
-:::
-
-::: {.result-card}
-![TESTING!n](static/images/placeholder-result3.svg)
-:::
-
-:::
-
-:::
-
-
-<!-- ============================================================ -->
-<!-- QUALITATIVE COMPARISONS -->
-<!-- ============================================================ -->
-
-::: {.section-container}
-
-## Qualitative Comparisons {.section-title}
-
-::: {.content-text}
-Describe the comparison setup — which baselines are you comparing against, and
-what should the reader look for in the side-by-side results.
-:::
-
-::: {.comparison-grid}
-
-::: {.comparison-item}
-![Ours](static/images/placeholder-ours.svg)
-
-**Ours**
-:::
-
-::: {.comparison-item}
-![Baseline A](static/images/placeholder-baseline.svg)
-
-**Baseline A**
-:::
-
-:::
+```{=html}
+<div style="max-width:600px;margin:1.5rem auto 0;">
+  <div style="margin-bottom:12px;">
+    <div style="display:flex;justify-content:space-between;font-size:0.9rem;color:#555;margin-bottom:4px;"><span>IPM Lane Detection</span><span>85%</span></div>
+    <div style="height:6px;background:#e0e0e0;border-radius:3px;overflow:hidden;"><div style="height:100%;width:85%;background:#4a6cf7;border-radius:3px;"></div></div>
+  </div>
+  <div style="margin-bottom:12px;">
+    <div style="display:flex;justify-content:space-between;font-size:0.9rem;color:#555;margin-bottom:4px;"><span>Pure Pursuit (simulator)</span><span>75%</span></div>
+    <div style="height:6px;background:#e0e0e0;border-radius:3px;overflow:hidden;"><div style="height:100%;width:75%;background:#4a6cf7;border-radius:3px;"></div></div>
+  </div>
+  <div style="margin-bottom:12px;">
+    <div style="display:flex;justify-content:space-between;font-size:0.9rem;color:#555;margin-bottom:4px;"><span>PI Velocity Controller</span><span>60%</span></div>
+    <div style="height:6px;background:#e0e0e0;border-radius:3px;overflow:hidden;"><div style="height:100%;width:60%;background:#4a6cf7;border-radius:3px;"></div></div>
+  </div>
+  <div style="margin-bottom:12px;">
+    <div style="display:flex;justify-content:space-between;font-size:0.9rem;color:#555;margin-bottom:4px;"><span>1D Particle Filter</span><span>40%</span></div>
+    <div style="height:6px;background:#e0e0e0;border-radius:3px;overflow:hidden;"><div style="height:100%;width:40%;background:#4a6cf7;border-radius:3px;"></div></div>
+  </div>
+  <div style="margin-bottom:12px;">
+    <div style="display:flex;justify-content:space-between;font-size:0.9rem;color:#555;margin-bottom:4px;"><span>Hardware Integration</span><span>15%</span></div>
+    <div style="height:6px;background:#e0e0e0;border-radius:3px;overflow:hidden;"><div style="height:100%;width:15%;background:#4a6cf7;border-radius:3px;"></div></div>
+  </div>
+</div>
+```
 
 :::
 
 
 <!-- ============================================================ -->
-<!-- INTERACTIVE SLIDER (Optional) -->
+<!-- KEY CHALLENGES                                               -->
 <!-- ============================================================ -->
 
 ::: {.section-container}
 
-## Interpolation Demo {.section-title}
+## Key Challenges & Mitigations {.section-title}
 
 ::: {.content-text}
-If your method supports interpolation or continuous control, you can add an
-interactive slider here. The example below shows how to set one up.
-:::
 
-::: {.interpolation-panel}
+**Long Straight — Curvature Ambiguity.**
+κ≈0 on straights gives no localisation signal. The particle filter relies on velocity propagation to maintain *s* during straights. The IPM BEV sees 1–3 m ahead, so corner entry curvature is visible before the car reaches it.
 
-::: {.interpolation-endpoints}
-![Start](static/images/placeholder-start.svg){.endpoint-img}
+**Pure Pursuit Corner Cutting.**
+Long L_d causes the car to cut apexes. Reduce L_d proportionally to |κ(s)| at high-curvature waypoints. The pre-known curvature profile enables a feedforward schedule — L_d is reduced *before* entering each corner, not reactively.
 
-![End](static/images/placeholder-end.svg){.endpoint-img}
-:::
+**IPM Lane Detection Failure.**
+Shadows, reflections, or line damage degrade detection. CLAHE preprocessing normalises lighting. Fallback: if polynomial fit residual exceeds threshold for >5 frames, reduce speed to 50% and hold last-valid lane estimate. CNN-based segmentation (LaneNet TensorRT) as a drop-in upgrade.
 
-<input type="range" min="0" max="100" value="50" class="interpolation-slider" id="interpolation-slider">
-<div id="interpolation-value" class="interpolation-value">50%</div>
+**PI Integrator Windup.**
+Integrator state lags during hard braking. Clamp to ±I_max. Reset integrator when sign of velocity error changes (conditional integration). VESC internal PID speed mode handles low-level torque management.
 
-<script>
-  const slider = document.getElementById('interpolation-slider');
-  const display = document.getElementById('interpolation-value');
-  slider.addEventListener('input', function() {
-    display.textContent = this.value + '%';
-  });
-</script>
+**Motion Blur at Race Speed.**
+High speed causes camera exposure blur. Reduce exposure time (increase gain to compensate brightness). Use IR channel of RealSense D435i — floor lines have higher contrast under IR. GPU-accelerate rectification via `isaac_ros_image_proc` on Jetson to maintain 60 fps.
+
+**Particle Filter Convergence Time.**
+*s* is unknown at race start — 1–3 lap convergence required. Start Phase 1 (Lane PID, no *s* needed) at reduced speed until particle filter ESS > N/2. The filter typically converges within the first 2–3 corners (~5 seconds). Transition to full racing speed automatically when convergence is confirmed.
 
 :::
 
@@ -200,29 +425,85 @@ interactive slider here. The example below shows how to set one up.
 
 
 <!-- ============================================================ -->
-<!-- RELATED WORK -->
+<!-- TEAM & PLAN                                                  -->
 <!-- ============================================================ -->
 
 ::: {.section-container}
 
-## Related Work {.section-title}
+## Team & Project Plan {.section-title}
 
 ::: {.content-text}
 
-Here are some related works in this area:
+**Arjun Chainani** — *Perception Lead.*
+IPM homography calibration, lane segmentation, polynomial fitting pipeline, ROS 2 perception node.
 
-- [Related Paper 1](https://example.com) introduces an idea similar to ours for [topic].
-- [Related Paper 2](https://example.com) also addresses [problem] using [approach].
-- [Related Paper 3](https://example.com) proposes [technique] which is complementary to our method.
+**Sam Lee** — *Localisation Lead.*
+1D particle filter implementation, curvature profile computation, EKF integration, convergence analysis.
 
-Check out [this survey](https://example.com) for a comprehensive overview of the field.
+**Suryansh Singh** — *Control & Planning Lead.*
+Pure Pursuit implementation, adaptive lookahead tuning, PI velocity controller, VESC integration, offline trajectory optimisation.
+
+:::
+
+::: {.content-text}
+
+**Project Timeline**
+
+| Period | Milestone | Status |
+|---|---|---|
+| Week 1–2 · Jan 2026 | Research & Architecture | ✅ Done |
+| Week 3–4 · Jan–Feb 2026 | Simulator Setup & IPM Pipeline | ✅ Done |
+| Week 5–6 · Feb–Mar 2026 | Particle Filter + Pure Pursuit | 🔄 In Progress |
+| Week 7–8 · Mar 2026 | Hardware Deployment | 📋 Planned |
+| Week 9–10 · Apr 2026 | Racing Line + Speed Optimisation | 📋 Planned |
+| Week 11–12 · Apr–May 2026 | Competition Preparation | 📋 Planned |
+
 :::
 
 :::
 
 
 <!-- ============================================================ -->
-<!-- BIBTEX -->
+<!-- RELATED WORK / REFERENCES                                    -->
+<!-- ============================================================ -->
+
+::: {.section-container}
+
+## References {.section-title}
+
+::: {.content-text}
+
+[1] Coulter, R.C. (1992). *Implementation of the Pure Pursuit Path Tracking Algorithm.* CMU-RI-TR-92-01. Carnegie Mellon Robotics Institute.
+
+[2] Sukhil, V. & Behl, M. (2021). *Adaptive Lookahead Pure-Pursuit for Autonomous Racing.* arXiv:2111.08873. 20% improvement in lap time over fixed-lookahead baseline on F1Tenth.
+
+[3] Heilmeier, A. et al. (2020). *Minimum Curvature Trajectory Planning and Control for an Autonomous Race Car.* Vehicle System Dynamics 58(10). doi:10.1080/00423114.2019.1631455
+
+[4] O'Kelly, M. et al. (2019). *F1/10: An Open-Source Autonomous Cyber-Physical Platform.* arXiv:1901.08567.
+
+[5] Bertozzi, M. & Broggi, A. (1998). *GOLD: A Parallel Real-Time Stereo Vision System for Generic Obstacle and Lane Detection.* IEEE Trans. Image Processing 7(1). doi:10.1109/83.650851
+
+[6] Thrun, S., Burgard, W. & Fox, D. (2005). *Probabilistic Robotics.* MIT Press. Ch. 4: Nonparametric Filters.
+
+[7] Moore, T. & Stouch, D. (2014). *A Generalized Extended Kalman Filter Implementation for ROS.* Intelligent Autonomous Systems 13.
+
+[8] Snider, J.M. (2009). *Automatic Steering Methods for Autonomous Automobile Path Tracking.* CMU-RI-TR-09-08.
+
+[9] Farkas, T. et al. (2025). *Integrating a Stereo Vision System on the F1Tenth Platform.* MDPI Engineering Proceedings.
+
+[10] Elgouhary, M. & El-Wakeel, A.S. (2026). *Learning to Tune Pure Pursuit in Autonomous Racing: Joint Lookahead and Steering-Gain Control with PPO.* arXiv:2602.18386.
+
+[11] Evans, B. et al. (2024). *Unifying F1Tenth Autonomous Racing: Survey, Methods and Benchmarks.* arXiv:2402.18558.
+
+[12] Raji, A. et al. (2023). *Model- and Acceleration-Based Pursuit Controller for High-Performance Autonomous Racing.* arXiv:2209.04346.
+
+:::
+
+:::
+
+
+<!-- ============================================================ -->
+<!-- BIBTEX                                                       -->
 <!-- ============================================================ -->
 
 ::: {.section-container}
@@ -230,11 +511,12 @@ Check out [this survey](https://example.com) for a comprehensive overview of the
 ## BibTeX {.section-title}
 
 ```bibtex
-@article{yourname2026project,
-  author    = {Author One and Author Two and Author Three},
-  title     = {Your Project Title Here},
-  journal   = {Conference or Journal Name},
-  year      = {2026},
+@techreport{tentenths2026,
+  author      = {Chainani, Arjun and Lee, Sam and Singh, Suryansh},
+  title       = {Ten Tenths: Vision-Only Autonomous Lap Racing on a Known-Track F1Tenth Platform},
+  institution = {University of Illinois Urbana-Champaign},
+  year        = {2026},
+  note        = {ECE 484 Project Report, Spring 2026},
 }
 ```
 
@@ -242,7 +524,7 @@ Check out [this survey](https://example.com) for a comprehensive overview of the
 
 
 <!-- ============================================================ -->
-<!-- FOOTER -->
+<!-- FOOTER                                                       -->
 <!-- ============================================================ -->
 
 ::: {.site-footer}
