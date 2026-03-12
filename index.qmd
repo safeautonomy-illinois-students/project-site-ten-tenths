@@ -259,20 +259,6 @@ Arc-length position *s* is estimated by a 1D sequential Monte Carlo filter. Each
 
 ---
 
-### Extended Kalman Filter Fusion (Localisation)
-
-The `robot_localization` EKF node fuses wheel odometry, IMU gyroscope, IPM lane state (d, ψ_e), and the particle filter *s* estimate into a smooth continuous-time state at 200 Hz. The non-holonomic constraint (zero lateral wheel velocity) is applied as a virtual measurement, suppressing lateral drift between camera frames.
-
-```
-State:  X = [x, y, ψ, v]
-Inputs: /wheel_odom, /imu/data, /lane_state (d, ψe), /arc_length (s)
-Output: /frenet_state @ 200 Hz  →  [s, d, ψe, v]
-```
-
-*Ref: Moore & Stouch (2014). robot_localization. IIAS.*
-
----
-
 ### Minimum-Curvature Trajectory Optimisation (Planning)
 
 The offline racing line is computed by solving a quadratic program (QP) that minimises the integral of squared curvature along the path, subject to track boundary constraints. This produces the smoothest possible line through the track, reducing required lateral acceleration and allowing higher cornering speeds.
