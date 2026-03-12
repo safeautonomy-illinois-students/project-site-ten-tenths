@@ -201,7 +201,7 @@ The system addresses three core objectives:
 
 ::: {.video-container}
 <!-- Replace with your YouTube or local video embed -->
-{{< video https://www.youtube.com/embed/cSQTZoZPJzs >}}
+{{< video https://youtube.com/shorts/XwaU8WOE3lk?si=EbXz5Lkaug5Z-NAx >}}
 :::
 
 :::
