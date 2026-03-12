@@ -177,9 +177,9 @@ University of Illinois Urbana-Champaign · ECE 484 · Spring 2026
 ## Problem Statement {.section-title}
 
 ::: {.abstract-text}
-We present **Ten Tenths**, a perception and control stack for autonomous lap racing on a 1:10 scale F1Tenth car. The platform is a Traxxas Slash 4x4 (~4 kg) running an NVIDIA Jetson compute board, a VESC motor controller, and a stereo camera as the sole exteroceptive sensor.
+**F1Tenth** is a autonomous driving platform on a 1:10 scale RC car, incorporating IMU, stereo vision, and wheelspeed sensors, and running onboard NVIDIA Jetson compute board.
 
-The competition environment uses painted or taped floor lines as the only identifiable visual landmarks — no walls, cones, or 3D features suitable for LiDAR or SLAM. The full track geometry (boundaries and centreline) is provided as a data file before racing, eliminating the need for online mapping.
+The competition track uses taped floor lines visual identifiers for the boundaries of the track. The full track geometry (boundaries and centreline) is provided before competition, which makes online mapping redundant.
 
 The system addresses three core objectives:
 
@@ -232,7 +232,7 @@ BEV_img = cv2.warpPerspective(rect_img, H, (W, H_bev))
 
 ### Lane Detection & State Extraction (Perception)
 
-After IPM, lane pixels are segmented via adaptive thresholding with CLAHE preprocessing. A quadratic polynomial is fitted to each lane boundary; the centreline is the average of the two fits. Three control-relevant quantities are derived at every camera frame:
+With the processed BEV image, lane pixels are segmented via adaptive thresholding with CLAHE preprocessing. A quadratic polynomial is fitted to each lane boundary; the centreline is the average of the two fits. Three control-relevant quantities are derived at every camera frame:
 
 ```python
 d     = x_centre(y=0)                         # cross-track error [m]
