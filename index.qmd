@@ -1,5 +1,5 @@
 ---
-pagetitle: "Ten Tenths — ECE484 Midpoint Checkpoint"
+pagetitle: "Ten Tenths: ECE484 Midpoint Checkpoint"
 format:
   html:
     toc: false
@@ -11,8 +11,7 @@ format:
 # Ten Tenths {.title}
 
 ::: {.subtitle}
-A bounded-augmentation LiDAR autonomy stack for the F1Tenth platform.
-A ±60° wall-balance PID as the always-on safety floor, plus a health-gated quadratic wall fit that adds heading feedforward and a curvature-based speed cap — *only when trusted*.
+A LiDAR autonomy stack for the F1Tenth platform. A Wall-Balance PID provides the always-on safety floor. A health-gated quadratic wall fit adds a bounded heading feedforward and a curvature-based speed cap on top.
 :::
 
 ::: {.author-list}
@@ -41,7 +40,7 @@ University of Illinois Urbana-Champaign · ECE 484 · Spring 2026 · Midpoint Ch
 
 
 <!-- ============================================================ -->
-<!-- TEASER — System Architecture Block Diagram                   -->
+<!-- TEASER: System Architecture Block Diagram                    -->
 <!-- ============================================================ -->
 
 ::: {.section-container}
@@ -160,7 +159,7 @@ University of Illinois Urbana-Champaign · ECE 484 · Spring 2026 · Midpoint Ch
 </svg>
 ```
 
-*System architecture. The LiDAR scan feeds both the Wall-Balance PID inner loop (always on) and the wide-sector wall fits (gated by a multi-frame health check). The combiner clips the heading feedforward inside ±0.12 rad and applies the curvature speed cap only downward — the inner loop remains the safety floor.*
+*System architecture. The LiDAR scan feeds the Wall-Balance PID inner loop (always on) and the wide-sector wall fits (gated by a multi-frame health check). The combiner clips the heading feedforward to ±0.12 rad and applies the curvature speed cap only downward. The inner loop remains the safety floor.*
 
 :::
 
@@ -179,13 +178,11 @@ University of Illinois Urbana-Champaign · ECE 484 · Spring 2026 · Midpoint Ch
 
 **F1Tenth** is a 1:10-scale autonomous racing platform carrying a 2D LiDAR, a stereo camera, a 9-DoF IMU, wheelspeed sensors, and an onboard NVIDIA Jetson. Races are run on taped floor-line tracks.
 
-For the ECE 484 midpoint milestone we target the **LiDAR lane-following** problem: given only a `LaserScan` stream and no prior map, drive as many clean laps as possible around an arbitrary closed track while staying inside the lane.
+The midpoint milestone targets **LiDAR lane-following**: given only a `LaserScan` stream and no prior map, drive laps around an arbitrary closed track while staying inside the lane.
 
-We start from a simple, proven baseline — a **Wall-Balance PID**. Two angular windows are sampled at ±60° in the LiDAR frame, each averaged down to a single mean range `d_L` and `d_R`, and a PID drives the asymmetry `d_L − d_R` to zero. Speed is set by the minimum range in a ±10° forward cone. No map, no fit, no model — just two wall distances and a clearance scalar. It already drives the real car safely, and serves as our safety floor. The question we investigate is:
+The baseline is a **Wall-Balance PID**. Two angular windows are sampled at ±60° in the LiDAR frame, each averaged to a single mean range `d_L` and `d_R`. A PID drives the asymmetry `d_L − d_R` to zero. Speed is set by the minimum range in a ±10° forward cone. No map, no fit, no model: two wall distances and a clearance scalar. This baseline drives the real car without collisions and serves as the safety floor.
 
-> *Can we add fit-based features (quadratic wall curvature, heading estimate) on top of the Wall-Balance PID to improve centerline tracking, without ever reducing its robustness floor?*
-
-Our answer is **yes**, and the rest of this page quantifies when the augmentation helps, when it is conservative, and what we'd change next.
+The project investigates whether adding fit-based features (quadratic wall curvature, heading estimate) on top of the Wall-Balance PID can improve centerline tracking without reducing its robustness. The remainder of this page quantifies where the augmentation helps, where it is conservative, and what will change next.
 
 :::
 
@@ -202,32 +199,32 @@ Our answer is **yes**, and the rest of this page quantifies when the augmentatio
 
 ::: {.content-text}
 
-Each clip below is annotated so the viewer can follow what the controller is doing frame-by-frame. The **sim annotation** shows the RViz visualization of the wall windows, fitted quadratics, and the synthesized centerline, overlaid on the f1tenth_gym simulator. The **ROSBAG annotations** replay two real-vehicle LiDAR logs with the same visualization pipeline. The **physical annotation** is footage of the F1Tenth chassis running the stack on hardware.
+Each clip is annotated. The **sim annotation** shows the RViz visualization of the wall windows, fitted quadratics, and the synthesized centerline overlaid on the f1tenth_gym simulator. The **ROSBAG annotations** replay two real-vehicle LiDAR logs through the same visualization pipeline. The **physical annotation** is footage of the F1Tenth chassis running the stack on hardware.
 
 :::
 
 ::: {.video-container}
-**Simulator run — annotated.** RViz overlay showing left/right wall windows (green/red), per-wall quadratic fits, and the midline used for the heading feedforward.
+**Simulator run.** RViz overlay showing the left and right wall windows (green and red), per-wall quadratic fits, and the midline used for the heading feedforward.
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/TQtE2rdltpQ?si=eIpIlK9I2D63fyfT" title="Ten Tenths — sim annotation" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/TQtE2rdltpQ?si=eIpIlK9I2D63fyfT" title="Ten Tenths: sim annotation" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 :::
 
 ::: {.video-container}
-**LiDAR ROSBAG #1 — annotated.** Offline replay of a real-car LiDAR rosbag, processed by the same perception path used live. The ±60° wall-balance windows and the wide fit sectors are both drawn.
+**LiDAR ROSBAG #1.** Offline replay of a real-car LiDAR rosbag, processed by the same perception path used live. The ±60° wall-balance windows and the wide fit sectors are both drawn.
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/QbozmKPfpeE?si=uL4U_tl9wkPfG3G5" title="Ten Tenths — LiDAR ROSBAG annotation 1" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/QbozmKPfpeE?si=uL4U_tl9wkPfG3G5" title="Ten Tenths: LiDAR ROSBAG annotation 1" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 :::
 
 ::: {.video-container}
-**LiDAR ROSBAG #2 — annotated.** A second bag, captured on a different corner configuration. Watch the health-window gating: the green fit curve disappears for a few frames at corner entry, which is exactly when the heading feedforward falls back to 0.
+**LiDAR ROSBAG #2.** A second bag, captured on a different corner configuration. Health-window gating is visible: the fit curve disappears for a few frames at corner entry, which is when the heading feedforward falls back to 0.
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/InFsui8X698?si=oCQDBRA18LK3450c" title="Ten Tenths — LiDAR ROSBAG annotation 2" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/InFsui8X698?si=oCQDBRA18LK3450c" title="Ten Tenths: LiDAR ROSBAG annotation 2" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 :::
 
 ::: {.video-container}
-**Physical vehicle — annotated.** The F1Tenth running the stack on the CSL Studio test track.
+**Physical vehicle.** The F1Tenth running the stack on the CSL Studio test track.
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/9cvgfgG8jbA?si=axeF-07p6Rq8JgcD" title="Ten Tenths — physical vehicle annotation" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/9cvgfgG8jbA?si=axeF-07p6Rq8JgcD" title="Ten Tenths: physical vehicle annotation" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 :::
 
 :::
@@ -257,19 +254,19 @@ steer   = Kp*error + Ki*∫error + Kd*Δerror   # clamped to ±0.4 rad
 speed   = clip(min(front_cone) * 2.0, 0, v_max)
 ```
 
-This loop is *always on*. Setting `enable_advanced: false` reverts to byte-identical Wall-Balance behavior — the augmentation can never take the controller below this floor.
+This loop is always on. Setting `enable_advanced: false` reverts to byte-identical Wall-Balance behavior. The augmentation cannot take the controller below this floor.
 
 ### 2. Fit-based augmentation (bounded, gated)
 
-Wide angular sectors (±30°..±120°) on each side are collected into point clouds in vehicle frame. An MAD-filtered quadratic `y = ax² + bx + c` is fit per wall. The fit's **linear term `b`** is the local wall slope at the car — a noisy-but-direct heading signal.
+Wide angular sectors (±30° to ±120°) on each side are collected into point clouds in vehicle frame. An MAD-filtered quadratic `y = ax² + bx + c` is fit per wall. The fit's **linear term `b`** is the local wall slope at the car, used as a heading signal.
 
-The fit is *not* trusted until a **health window** of K=3 consecutive scans has:
+The fit is not trusted until a **health window** of K=3 consecutive scans has:
 
 - produced a valid fit on that side,
 - agreed on `sign(b)` (prevents corner-entry flips),
 - kept `σ(b) < b_stability_thresh`.
 
-When both sides are healthy, a **heading feedforward** `ff = k · ½(b_L + b_R)` is clipped to ±0.12 rad (~30% of max steer) and added to the PID's output. A **curvature-based speed cap** `v_curv = √(a_lat / |κ|)` is derived from the fit's quadratic coefficients and applied as `min(v_wb, v_curv)` — it can only *lower* the Wall-Balance speed, never raise it.
+When both sides are healthy, a **heading feedforward** `ff = k · ½(b_L + b_R)` is clipped to ±0.12 rad (~30% of max steer) and added to the PID output. A **curvature-based speed cap** `v_curv = √(a_lat / |κ|)` is derived from the fit's quadratic coefficients and applied as `min(v_wb, v_curv)`. The cap can only lower the Wall-Balance speed, never raise it.
 
 ### 3. Bounded combiner
 
@@ -278,7 +275,7 @@ steer_cmd = clip(steer_wb + ff,              -0.4, 0.4)  # inner-loop clip
 speed_cmd = min(speed_wb, v_curv)                        # cap-only
 ```
 
-An optional first-order EMA on the combined commands is wired up but disabled (`steer_tau = speed_tau = 0`) — at 250 Hz scan rate the raw signal is already smooth enough.
+An optional first-order EMA on the combined commands is wired up but disabled (`steer_tau = speed_tau = 0`). At 250 Hz scan rate the raw signal is already smooth.
 
 :::
 
@@ -295,17 +292,17 @@ An optional first-order EMA on the combined commands is wired up but disabled (`
 
 ::: {.content-text}
 
-The earliest version of the fit-based controller (still in the tree as `lane_follower_node_quadfit.py.bak`) fed the quadratic's coefficients directly into the steer command — *no* PID fallback, *no* sanity gating. It failed on the tight 5×6 m circuit: at corner entry, the LiDAR briefly sees the outside wall of *the next corner*, which flips the sign of `b` for a handful of scans, the controller oversteers, the car clips the apex.
+The earliest version of the fit-based controller (still in the tree as `lane_follower_node_quadfit.py.bak`) fed the quadratic coefficients directly into the steer command, with no PID fallback and no sanity gating. It failed on the tight 5×6 m circuit. At corner entry, the LiDAR briefly sees the outside wall of the next corner, which flips the sign of `b` for several scans. The controller oversteers and the car clips the apex.
 
 The health window is the direct fix. It does three things:
 
 1. **Raw sanity.** MAD outlier reject on the point cloud; reject fits with `|a| > 20` or `|b| > 10`.
-2. **Multi-frame agreement.** Require the last K=3 fits to all be valid *and* agree on `sign(b)`.
+2. **Multi-frame agreement.** Require the last K=3 fits to all be valid and agree on `sign(b)`.
 3. **Stability.** Require `σ(b)` across the window to be below `b_stability_thresh = 1.0`.
 
-If any of those fail, `ff = 0` and `v_curv = ∞` on that frame — the advanced layer silently steps aside, the Wall-Balance PID drives the car by itself.
+If any of those fail, `ff = 0` and `v_curv = ∞` on that frame. The advanced layer steps aside, and the Wall-Balance PID drives alone.
 
-The consequence is a strictly-bounded perturbation: the worst case of the advanced layer is "same as Wall-Balance." In 2×60 s of sim driving across all our tracks, zero collisions occurred in either condition.
+The result is a bounded perturbation: the worst case of the advanced layer is identical to Wall-Balance. Across 2 × 60 s of simulator driving over all four test tracks, zero collisions occurred in either condition.
 
 :::
 
@@ -322,7 +319,7 @@ The consequence is a strictly-bounded perturbation: the worst case of the advanc
 
 ::: {.content-text}
 
-We built four procedurally-generated maps to stress different controller behaviors. Each has 80 cm lane width, 3 cm right-angle sawtooth wall detail, and fillet radii tuned against the car's 0.74 m minimum turn radius. Map-generation scripts are under `src/f1tenth_simulator/f1tenth_gym_ros/maps/`.
+Four procedurally-generated maps cover a range of corner geometries. Each has 80 cm lane width, 3 cm right-angle sawtooth wall detail, and fillet radii sized against the car's 0.74 m minimum turn radius. Map-generation scripts are under `src/f1tenth_simulator/f1tenth_gym_ros/maps/`.
 
 :::
 
@@ -331,25 +328,25 @@ We built four procedurally-generated maps to stress different controller behavio
 ::: {.comparison-item}
 ![](static/images/circuit.png)
 
-**circuit** — baseline 5×6 m closed loop with fillet corners at the car's min turn radius. Shakedown track.
+**circuit.** A 5×6 m closed loop with fillet corners at the minimum turn radius. Shakedown track.
 :::
 
 ::: {.comparison-item}
 ![](static/images/hairpin.png)
 
-**hairpin** — paperclip layout, two tight 180° U-turns (r=0.85 m) joined by 4 m parallel straights. Forces full ±0.4 rad steering.
+**hairpin.** Paperclip layout. Two 180° U-turns (r=0.85 m) joined by 4 m parallel straights. Exercises full ±0.4 rad steering.
 :::
 
 ::: {.comparison-item}
 ![](static/images/snake.png)
 
-**snake** — 5-bend serpentine (r=0.4 m, *below* min turn radius) plus rectangular wrap. First map to exercise the left/right alternation logic.
+**snake.** A 5-bend serpentine (r=0.4 m, below the minimum turn radius) plus a rectangular wrap. First map to exercise the left and right alternation logic.
 :::
 
 ::: {.comparison-item}
 ![](static/images/pocket.png)
 
-**pocket** — C-shape with a 2.5×1.5 m notch carved into the right side; 0.5 m notch-corner radii. The study map used below.
+**pocket.** C-shape with a 2.5×1.5 m notch on the right side. Notch-corner radii are 0.5 m. Used as the study map below.
 :::
 
 :::
@@ -358,16 +355,16 @@ We built four procedurally-generated maps to stress different controller behavio
 
 
 <!-- ============================================================ -->
-<!-- RESULTS — CROSS-COMPARISON STUDY                             -->
+<!-- RESULTS: CROSS-COMPARISON STUDY                              -->
 <!-- ============================================================ -->
 
 ::: {.section-container}
 
-## Results — Wall-Balance vs Advanced {#results .section-title}
+## Results: Wall-Balance vs Advanced {#results .section-title}
 
 ::: {.content-text}
 
-Both controllers were run back-to-back on the **pocket** track — centerline length 22.68 m, 37% classified as corner. Each condition was given 60 s of wall-clock driving at `max_speed = 1.5 m/s`. Cross-track error (CTE) is the Euclidean distance from each odom sample to the nearest centerline point, evaluated against an 11336-sample KDTree reconstruction.
+Both controllers were run back-to-back on the **pocket** track (centerline length 22.68 m, 37% classified as corner). Each condition was given 60 s of wall-clock driving at `max_speed = 1.5 m/s`. Cross-track error (CTE) is the Euclidean distance from each odom sample to the nearest centerline point, evaluated against an 11336-sample KDTree reconstruction.
 
 **Runs per condition:** 1 continuous 60 s session, 3 full laps each · **Collisions:** 0 · **Reproduce:** `study/run_comparison.sh 60 && python3 study/analyze.py`
 
@@ -382,20 +379,20 @@ Both controllers were run back-to-back on the **pocket** track — centerline le
 | mean (corners only) | 0.029 | 0.022 | −0.007 | −24 % |
 | mean (straights only) | 0.059 | 0.040 | −0.019 | **−32 %** |
 
-The CTE gain is **concentrated on the straights** — the bounded heading feedforward pulls the car back toward the geometric centerline along long straights where the purely-symmetric `d_L − d_R` signal is satisfied by any laterally-offset path.
+The CTE gain is concentrated on the straights. The bounded heading feedforward pulls the car toward the geometric centerline on long straights, where the symmetric `d_L − d_R` signal would otherwise tolerate any laterally-offset path.
 
 ::: {.comparison-grid}
 
 ::: {.comparison-item}
 ![CTE histogram](static/images/cte_histogram.png)
 
-Distribution of cross-track error per odom sample. Advanced shifts the entire distribution left.
+Distribution of cross-track error per odom sample. Advanced shifts the distribution toward zero.
 :::
 
 ::: {.comparison-item}
 ![CTE by segment](static/images/cte_by_segment.png)
 
-CTE split by corner vs straight samples. Both improve; the straights improve more.
+CTE split by corner and straight samples. Both improve; the straights improve more.
 :::
 
 :::
@@ -415,7 +412,7 @@ CTE split by corner vs straight samples. Both improve; the straights improve mor
 | wall-balance | 14.95 s | 15.00 s | 15.01 s | **15.00 ± 0.03 s** | 1.513 m/s |
 | advanced     | 14.60 s | 14.61 s | 14.56 s | **14.59 ± 0.03 s** | 1.555 m/s |
 
-Advanced is **0.4 s faster per lap (−2.7 %)** and lap-to-lap variance is tiny (std ≈ 30 ms) in both conditions — the controller is repeatable.
+Advanced is 0.4 s faster per lap (−2.7 %). Lap-to-lap variance is low in both conditions (std ≈ 30 ms).
 
 ::: {.comparison-grid}
 
@@ -428,7 +425,7 @@ Speed trace over a lap's arclength. Advanced holds the speed floor higher throug
 ::: {.comparison-item}
 ![Speed by segment](static/images/speed_by_segment.png)
 
-Mean speed in corner vs straight segments.
+Mean speed in corner and straight segments.
 :::
 
 :::
@@ -440,7 +437,7 @@ Mean speed in corner vs straight segments.
 ::: {.comparison-item}
 ![Trajectories](static/images/trajectory.png)
 
-Driven trajectories overlaid on the centerline. Advanced sits closer to the centerline on straights and cuts notch-corner apices less.
+Driven trajectories overlaid on the centerline. The advanced path stays closer to the centerline on straights and cuts less into the notch-corner apices.
 :::
 
 ::: {.comparison-item}
@@ -451,11 +448,11 @@ Per-lap average velocity across 3 full laps, each condition.
 
 :::
 
-### What the numbers mean
+### Observations
 
-1. **Centerline tracking is meaningfully better** — ~30 % reduction on mean CTE, ~20 % on p95. The bounded heading FF is the dominant contributor and it does its work on straights, not corners.
-2. **The curvature speed cap is currently too conservative** — the notch has 0.5 m radii, which drives `v_curv ≈ √(a_lat / |κ|)` down toward 1 m/s. On the Wall-Balance baseline, the forward-clearance-only speed safely cleared the same corners at ~1.3 m/s; the cap is the main reason the advanced corner-mean speed isn't higher. Either raising `lateral_accel_limit` or relaxing the cap to `min(v_wb, α · v_curv)` with `α > 1` would recover this.
-3. **No safety regression** — zero collisions in either condition, lap-time variance unchanged. The health-gated bounded design does what we asked it to: improvements when trusted, passthrough when not.
+1. **Centerline tracking improves.** Mean CTE drops by ~30 %, p95 by ~20 %. The bounded heading feedforward is the dominant contributor, and its effect is on straights rather than corners.
+2. **The curvature speed cap is conservative.** The notch radii are 0.5 m, which drives `v_curv ≈ √(a_lat / |κ|)` toward 1 m/s. The Wall-Balance baseline cleared the same corners at ~1.3 m/s using forward-clearance speed alone. The cap accounts for most of the remaining corner-speed gap. Raising `lateral_accel_limit` or relaxing the cap to `min(v_wb, α · v_curv)` with `α > 1` would recover this.
+3. **No safety regression.** Zero collisions in either condition. Lap-time variance is unchanged. The health-gated bounded design provides improvements when trusted and passthrough when not.
 
 :::
 
@@ -522,13 +519,13 @@ ECE 484 measures F1Tenth teams against **Milestone 2 (software) complete** and *
 
 ::: {.content-text}
 
-**Don't replace a working controller — extend it.** The pure-quadfit first pass was *worse* than the Wall-Balance baseline on exactly the kinds of corners Wall-Balance was tuned for. Keeping Wall-Balance as an always-on inner loop and making the fit layer a strictly-bounded perturbation gave us all the upside (smoother straights, corner entry prediction) with a hard guarantee that we never lose the floor.
+**Extend, do not replace.** The pure-quadfit first pass was worse than the Wall-Balance baseline on the corners Wall-Balance was tuned for. Keeping Wall-Balance as an always-on inner loop and making the fit layer a bounded perturbation preserved smoother straights and corner-entry prediction without losing the safety floor.
 
-**Multi-frame gating matters more than sanity checks.** Per-frame sanity (MAD reject, coefficient bounds) removed ~10 % of bad fits. The *multi-frame* gates (sign-of-`b` consistency, σ-of-`b` stability) removed the catastrophic ones — the corner-entry b-flips that actually caused crashes. Ordered correctly, the cost of the gate is zero: it just delays the augmentation by K scans, 12 ms at 250 Hz, which the car doesn't notice.
+**Multi-frame gating matters more than sanity checks.** Per-frame sanity (MAD reject, coefficient bounds) removed ~10 % of bad fits. The multi-frame gates (sign-of-`b` consistency, σ-of-`b` stability) removed the catastrophic cases: the corner-entry b-flips that caused crashes. The cost is a K-scan delay on the augmentation, 12 ms at 250 Hz, which does not affect control.
 
-**Define the metric before tuning.** Early on we tuned visually ("looks smoother"). Once `study/analyze.py` existed — CTE mean/p95, corner-vs-straight split, per-lap time — tuning `lateral_accel_limit` and `heading_gain` took one evening instead of a week, and we could see that the curvature cap was *over-binding* on the notch rather than just slow.
+**Define the metric before tuning.** Early tuning was visual ("looks smoother"). Once `study/analyze.py` existed (CTE mean and p95, corner and straight split, per-lap time), tuning `lateral_accel_limit` and `heading_gain` took one evening rather than a week. The analysis also showed that the curvature cap was over-binding on the notch rather than simply slow.
 
-**Procedurally-generated maps are cheap insurance.** The hairpin map exposed that our steering authority was saturated on tight U-turns; the snake map surfaced an alternation bug in wall assignment; the pocket map's notch was specifically designed so the curvature cap would bind. Each was ~2 hours of Python to generate and saved us that much debugging on the real car.
+**Procedurally-generated maps catch issues early.** The hairpin map exposed saturation of steering authority on tight U-turns. The snake map surfaced an alternation bug in wall assignment. The pocket map's notch was designed so the curvature cap would bind. Each map took roughly 2 hours of Python to generate.
 
 :::
 
@@ -545,15 +542,15 @@ ECE 484 measures F1Tenth teams against **Milestone 2 (software) complete** and *
 
 ::: {.content-text}
 
-**Hardware bring-up (weeks of Apr 21 – May 2).** Port the tuned simulator params to the physical F1Tenth chassis, validate on the CSL Studio test track. The hardware drive/scan topics match the sim exactly — we expect the controller code to transfer unmodified; the tuning work is on `speed_gain` and `max_speed` given real-world tire friction.
+**Hardware bring-up (weeks of Apr 21 to May 2).** Port the tuned simulator parameters to the physical F1Tenth chassis and validate on the CSL Studio test track. The hardware drive and scan topics match the sim, so the controller code should transfer unmodified. The remaining tuning work is on `speed_gain` and `max_speed` under real-world tire friction.
 
-**Relax the curvature cap.** The pocket study showed the cap is ~30 % too conservative. Options: (a) raise `lateral_accel_limit` from 4.5 m/s² (its current value in yaml; study run was at 2.0) once we have real-car tire-grip data; (b) gate the cap to only apply when `|κ|` has been stable for a window, same trick as the heading FF; (c) soften the cap to `min(v_wb, α · v_curv)` with `α ≈ 1.2`.
+**Relax the curvature cap.** The pocket study showed the cap is ~30 % too conservative. Options: (a) raise `lateral_accel_limit` from 4.5 m/s² (its current value; the study run used 2.0) once real-car tire-grip data is available; (b) gate the cap to apply only when `|κ|` has been stable for a window, mirroring the heading-feedforward gate; (c) soften the cap to `min(v_wb, α · v_curv)` with `α ≈ 1.2`.
 
-**Enable the EMA smoother on hardware.** `steer_tau` and `speed_tau` are wired up but off (tau=0) in simulation because the 250 Hz scan rate is already smooth. On hardware with a 40–100 Hz effective rate and motor-controller latency, a small `tau ≈ 50 ms` will likely reduce command chatter without adding perceptible lag.
+**Enable the EMA smoother on hardware.** `steer_tau` and `speed_tau` are wired up but disabled (tau=0) in simulation because the 250 Hz scan rate is already smooth. On hardware at a 40 to 100 Hz effective rate with motor-controller latency, a small `tau ≈ 50 ms` should reduce command chatter without adding perceptible lag.
 
-**Expand the study.** Add the circuit, snake, and hairpin tracks into `run_comparison.sh` — report a full `(track × controller × param-sweep)` grid. Capture corner-entry LiDAR rosbags so we can replay the health-window behavior deterministically off-line.
+**Expand the study.** Add the circuit, snake, and hairpin tracks to `run_comparison.sh` and report a full `(track × controller × param-sweep)` grid. Capture corner-entry LiDAR rosbags to enable deterministic offline replay of health-window behavior.
 
-**Incorporate camera lane detection as a second input.** The IPM + polynomial lane pipeline (not in the midpoint scope) is under development in parallel. The bounded-combiner pattern here generalizes: the camera lane estimate would plug in as a third source that contributes only when healthy.
+**Incorporate camera lane detection as a second input.** The IPM plus polynomial lane pipeline (not in the midpoint scope) is under development in parallel. The bounded-combiner pattern generalizes: the camera lane estimate would plug in as a third input that contributes only when healthy.
 
 :::
 
@@ -570,11 +567,11 @@ ECE 484 measures F1Tenth teams against **Milestone 2 (software) complete** and *
 
 ::: {.content-text}
 
-**Arjun Chainani** — *Controls & integration.* Wall-Balance PID implementation in ROS 2, quadratic fit / health-window design, parameter tuning across tracks.
+**Arjun Chainani.** *Controls and integration.* Wall-Balance PID implementation in ROS 2, quadratic fit and health-window design, parameter tuning across tracks.
 
-**Sam Lee** — *Simulation & analysis.* Procedural map generation, cross-comparison study harness, CTE / speed / lap analysis pipeline, site.
+**Sam Lee.** *Simulation and analysis.* Procedural map generation, comparison-study harness, analysis pipeline (CTE, speed, lap), site.
 
-**Suryansh Singh** — *Hardware & perception.* CSL Studio bring-up, ROSBAG collection and annotation, camera-lane pipeline (post-midpoint).
+**Suryansh Singh.** *Hardware and perception.* CSL Studio bring-up, ROSBAG collection and annotation, camera-lane pipeline (post-midpoint).
 
 :::
 
