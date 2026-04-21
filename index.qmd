@@ -12,7 +12,7 @@ format:
 
 ::: {.subtitle}
 A bounded-augmentation LiDAR autonomy stack for the F1Tenth platform.
-eoh-derived wall-window PID as the always-on safety floor, plus a health-gated quadratic wall fit that adds heading feedforward and a curvature-based speed cap — *only when trusted*.
+A ±60° wall-balance PID as the always-on safety floor, plus a health-gated quadratic wall fit that adds heading feedforward and a curvature-based speed cap — *only when trusted*.
 :::
 
 ::: {.author-list}
@@ -83,7 +83,7 @@ University of Illinois Urbana-Champaign · ECE 484 · Spring 2026 · Midpoint Ch
 
   <!-- INNER LOOP column -->
   <rect x="196" y="10" width="180" height="360" rx="6" fill="#141b28" stroke="#2a3a55" stroke-width="1"/>
-  <text x="286" y="35" text-anchor="middle" font-family="monospace" font-size="9" fill="#00d4ff" letter-spacing="2">EOH INNER LOOP</text>
+  <text x="286" y="35" text-anchor="middle" font-family="monospace" font-size="9" fill="#00d4ff" letter-spacing="2">WALL-BALANCE PID</text>
   <rect x="211" y="48" width="150" height="50" rx="4" fill="#1a2235" stroke="#00d4ff" stroke-width="1.5"/>
   <text x="286" y="68" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#e8edf5">Wall Windows</text>
   <text x="286" y="84" text-anchor="middle" font-family="monospace" font-size="9" fill="#00d4ff">±60° ± 5 rays</text>
@@ -94,7 +94,7 @@ University of Illinois Urbana-Champaign · ECE 484 · Spring 2026 · Midpoint Ch
   <text x="286" y="192" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#e8edf5">Forward Clearance</text>
   <text x="286" y="208" text-anchor="middle" font-family="monospace" font-size="9" fill="#00d4ff">v = clip(d_f · 2, 0, v_max)</text>
   <rect x="211" y="234" width="150" height="50" rx="4" fill="#1a2235" stroke="#00d4ff" stroke-width="2"/>
-  <text x="286" y="254" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="600" fill="#00d4ff">steer_eoh, v_eoh</text>
+  <text x="286" y="254" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="600" fill="#00d4ff">steer_wb, v_wb</text>
   <text x="286" y="270" text-anchor="middle" font-family="monospace" font-size="9" fill="#8fa3c0">safety floor</text>
 
   <line x1="180" y1="100" x2="211" y2="72" stroke="#2563eb" stroke-width="1.2" marker-end="url(#arr)"/>
@@ -131,11 +131,11 @@ University of Illinois Urbana-Champaign · ECE 484 · Spring 2026 · Midpoint Ch
   <rect x="588" y="10" width="170" height="360" rx="6" fill="#141b28" stroke="#2a3a55" stroke-width="1"/>
   <text x="673" y="35" text-anchor="middle" font-family="monospace" font-size="9" fill="#ffd166" letter-spacing="2">BOUNDED COMBINER</text>
   <rect x="603" y="100" width="140" height="60" rx="4" fill="#1a2235" stroke="#ffd166" stroke-width="2"/>
-  <text x="673" y="124" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="600" fill="#ffd166">clip(steer_eoh + ff)</text>
+  <text x="673" y="124" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="600" fill="#ffd166">clip(steer_wb + ff)</text>
   <text x="673" y="142" text-anchor="middle" font-family="monospace" font-size="9" fill="#ffd166">|ff| ≤ 0.12 rad</text>
   <text x="673" y="154" text-anchor="middle" font-family="monospace" font-size="9" fill="#8fa3c0">|δ| ≤ 0.4 rad</text>
   <rect x="603" y="200" width="140" height="60" rx="4" fill="#1a2235" stroke="#ffd166" stroke-width="2"/>
-  <text x="673" y="224" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="600" fill="#ffd166">min(v_eoh, v_curv)</text>
+  <text x="673" y="224" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="600" fill="#ffd166">min(v_wb, v_curv)</text>
   <text x="673" y="242" text-anchor="middle" font-family="monospace" font-size="9" fill="#ffd166">cap only · never raise</text>
 
   <line x1="361" y1="260" x2="603" y2="130" stroke="#00d4ff" stroke-width="1.5" marker-end="url(#arr-blue)"/>
@@ -160,7 +160,7 @@ University of Illinois Urbana-Champaign · ECE 484 · Spring 2026 · Midpoint Ch
 </svg>
 ```
 
-*System architecture. The LiDAR scan feeds both the eoh PID inner loop (always on) and the wide-sector wall fits (gated by a multi-frame health check). The combiner clips the heading feedforward inside ±0.12 rad and applies the curvature speed cap only downward — the inner loop remains the safety floor.*
+*System architecture. The LiDAR scan feeds both the Wall-Balance PID inner loop (always on) and the wide-sector wall fits (gated by a multi-frame health check). The combiner clips the heading feedforward inside ±0.12 rad and applies the curvature speed cap only downward — the inner loop remains the safety floor.*
 
 :::
 
@@ -181,9 +181,9 @@ University of Illinois Urbana-Champaign · ECE 484 · Spring 2026 · Midpoint Ch
 
 For the ECE 484 midpoint milestone we target the **LiDAR lane-following** problem: given only a `LaserScan` stream and no prior map, drive as many clean laps as possible around an arbitrary closed track while staying inside the lane.
 
-A prior team member's real-vehicle implementation (the *eoh* stack — a ±60° wall-window PID on the LiDAR range difference, with speed proportional to forward clearance) is the starting point. The question we investigate is:
+We start from a simple, proven baseline — a **Wall-Balance PID**. Two angular windows are sampled at ±60° in the LiDAR frame, each averaged down to a single mean range `d_L` and `d_R`, and a PID drives the asymmetry `d_L − d_R` to zero. Speed is set by the minimum range in a ±10° forward cone. No map, no fit, no model — just two wall distances and a clearance scalar. It already drives the real car safely, and serves as our safety floor. The question we investigate is:
 
-> *Can we add fit-based features (quadratic wall curvature, heading estimate) on top of eoh to improve centerline tracking, without ever reducing its robustness floor?*
+> *Can we add fit-based features (quadratic wall curvature, heading estimate) on top of the Wall-Balance PID to improve centerline tracking, without ever reducing its robustness floor?*
 
 Our answer is **yes**, and the rest of this page quantifies when the augmentation helps, when it is conservative, and what we'd change next.
 
@@ -213,7 +213,7 @@ Each clip below is annotated so the viewer can follow what the controller is doi
 :::
 
 ::: {.video-container}
-**LiDAR ROSBAG #1 — annotated.** Offline replay of a real-car LiDAR rosbag, processed by the same perception path used live. The ±60° eoh windows and the wide fit sectors are both drawn.
+**LiDAR ROSBAG #1 — annotated.** Offline replay of a real-car LiDAR rosbag, processed by the same perception path used live. The ±60° wall-balance windows and the wide fit sectors are both drawn.
 
 <iframe width="560" height="315" src="https://www.youtube.com/embed/QbozmKPfpeE?si=uL4U_tl9wkPfG3G5" title="Ten Tenths — LiDAR ROSBAG annotation 1" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 :::
@@ -245,9 +245,9 @@ Each clip below is annotated so the viewer can follow what the controller is doi
 
 The autonomy runs as a single ROS 2 node, `lane_follower_node`. Each incoming LiDAR scan is processed through two parallel paths whose outputs are combined by a bounded mixer.
 
-### 1. eoh inner loop (safety floor)
+### 1. Wall-Balance PID inner loop (safety floor)
 
-A direct port of the real-car implementation. Two 11-ray windows are taken at ±60°; the **steering error** is the mean-range difference `d_L − d_R` fed through a PID with `Kp=0.6, Ki=0.005, Kd=0.2` and an integral clamp of 20. A ±10° forward cone supplies the minimum clearance used as **speed command** `v = clip(d_front · 2, 0, v_max)`.
+Two 11-ray windows are taken at ±60°; the **steering error** is the mean-range difference `d_L − d_R` fed through a PID with `Kp=0.6, Ki=0.005, Kd=0.2` and an integral clamp of 20. A ±10° forward cone supplies the minimum clearance used as **speed command** `v = clip(d_front · 2, 0, v_max)`.
 
 ```python
 d_left  = mean(ranges[left_window])
@@ -257,7 +257,7 @@ steer   = Kp*error + Ki*∫error + Kd*Δerror   # clamped to ±0.4 rad
 speed   = clip(min(front_cone) * 2.0, 0, v_max)
 ```
 
-This loop is *always on*. Setting `enable_advanced: false` reverts to byte-identical eoh behavior — the augmentation can never take the controller below this floor.
+This loop is *always on*. Setting `enable_advanced: false` reverts to byte-identical Wall-Balance behavior — the augmentation can never take the controller below this floor.
 
 ### 2. Fit-based augmentation (bounded, gated)
 
@@ -269,13 +269,13 @@ The fit is *not* trusted until a **health window** of K=3 consecutive scans has:
 - agreed on `sign(b)` (prevents corner-entry flips),
 - kept `σ(b) < b_stability_thresh`.
 
-When both sides are healthy, a **heading feedforward** `ff = k · ½(b_L + b_R)` is clipped to ±0.12 rad (~30% of max steer) and added to the PID's output. A **curvature-based speed cap** `v_curv = √(a_lat / |κ|)` is derived from the fit's quadratic coefficients and applied as `min(v_eoh, v_curv)` — it can only *lower* the eoh speed, never raise it.
+When both sides are healthy, a **heading feedforward** `ff = k · ½(b_L + b_R)` is clipped to ±0.12 rad (~30% of max steer) and added to the PID's output. A **curvature-based speed cap** `v_curv = √(a_lat / |κ|)` is derived from the fit's quadratic coefficients and applied as `min(v_wb, v_curv)` — it can only *lower* the Wall-Balance speed, never raise it.
 
 ### 3. Bounded combiner
 
 ```python
-steer_cmd = clip(steer_eoh + ff,              -0.4, 0.4)  # inner-loop clip
-speed_cmd = min(speed_eoh, v_curv)                        # cap-only
+steer_cmd = clip(steer_wb + ff,              -0.4, 0.4)  # inner-loop clip
+speed_cmd = min(speed_wb, v_curv)                        # cap-only
 ```
 
 An optional first-order EMA on the combined commands is wired up but disabled (`steer_tau = speed_tau = 0`) — at 250 Hz scan rate the raw signal is already smooth enough.
@@ -303,9 +303,9 @@ The health window is the direct fix. It does three things:
 2. **Multi-frame agreement.** Require the last K=3 fits to all be valid *and* agree on `sign(b)`.
 3. **Stability.** Require `σ(b)` across the window to be below `b_stability_thresh = 1.0`.
 
-If any of those fail, `ff = 0` and `v_curv = ∞` on that frame — the advanced layer silently steps aside, the eoh PID drives the car by itself.
+If any of those fail, `ff = 0` and `v_curv = ∞` on that frame — the advanced layer silently steps aside, the Wall-Balance PID drives the car by itself.
 
-The consequence is a strictly-bounded perturbation: the worst case of the advanced layer is "same as eoh." In 2×60 s of sim driving across all our tracks, zero collisions occurred in either condition.
+The consequence is a strictly-bounded perturbation: the worst case of the advanced layer is "same as Wall-Balance." In 2×60 s of sim driving across all our tracks, zero collisions occurred in either condition.
 
 :::
 
@@ -363,7 +363,7 @@ We built four procedurally-generated maps to stress different controller behavio
 
 ::: {.section-container}
 
-## Results — eoh vs Advanced {#results .section-title}
+## Results — Wall-Balance vs Advanced {#results .section-title}
 
 ::: {.content-text}
 
@@ -373,7 +373,7 @@ Both controllers were run back-to-back on the **pocket** track — centerline le
 
 ### Cross-track error
 
-| metric | eoh (m) | advanced (m) | Δ (adv − eoh) | % change |
+| metric | wall-balance (m) | advanced (m) | Δ (adv − wb) | % change |
 |--------|---------|--------------|---------------|----------|
 | mean | 0.046 | 0.032 | −0.014 | **−30 %** |
 | median | 0.042 | 0.024 | −0.017 | −40 % |
@@ -402,7 +402,7 @@ CTE split by corner vs straight samples. Both improve; the straights improve mor
 
 ### Speed & lap time
 
-| metric | eoh (m/s) | advanced (m/s) | Δ |
+| metric | wall-balance (m/s) | advanced (m/s) | Δ |
 |--------|-----------|----------------|---|
 | mean speed | 1.523 | 1.561 | +0.038 |
 | mean in corners | 1.324 | 1.331 | +0.007 |
@@ -410,10 +410,10 @@ CTE split by corner vs straight samples. Both improve; the straights improve mor
 | min in corners | 0.843 | 0.991 | **+0.148** |
 | max | 1.996 | 2.000 | +0.003 |
 
-| condition | lap 1 | lap 2 | lap 3 | lap time (mean ± std) | avg v |
-|-----------|-------|-------|-------|------------------------|-------|
-| eoh       | 14.95 s | 15.00 s | 15.01 s | **15.00 ± 0.03 s** | 1.513 m/s |
-| advanced  | 14.60 s | 14.61 s | 14.56 s | **14.59 ± 0.03 s** | 1.555 m/s |
+| condition    | lap 1 | lap 2 | lap 3 | lap time (mean ± std) | avg v |
+|--------------|-------|-------|-------|------------------------|-------|
+| wall-balance | 14.95 s | 15.00 s | 15.01 s | **15.00 ± 0.03 s** | 1.513 m/s |
+| advanced     | 14.60 s | 14.61 s | 14.56 s | **14.59 ± 0.03 s** | 1.555 m/s |
 
 Advanced is **0.4 s faster per lap (−2.7 %)** and lap-to-lap variance is tiny (std ≈ 30 ms) in both conditions — the controller is repeatable.
 
@@ -454,7 +454,7 @@ Per-lap average velocity across 3 full laps, each condition.
 ### What the numbers mean
 
 1. **Centerline tracking is meaningfully better** — ~30 % reduction on mean CTE, ~20 % on p95. The bounded heading FF is the dominant contributor and it does its work on straights, not corners.
-2. **The curvature speed cap is currently too conservative** — the notch has 0.5 m radii, which drives `v_curv ≈ √(a_lat / |κ|)` down toward 1 m/s. On eoh, the forward-clearance-only speed safely cleared the same corners at ~1.3 m/s; the cap is the main reason the advanced corner-mean speed isn't higher. Either raising `lateral_accel_limit` or relaxing the cap to `min(v_eoh, α · v_curv)` with `α > 1` would recover this.
+2. **The curvature speed cap is currently too conservative** — the notch has 0.5 m radii, which drives `v_curv ≈ √(a_lat / |κ|)` down toward 1 m/s. On the Wall-Balance baseline, the forward-clearance-only speed safely cleared the same corners at ~1.3 m/s; the cap is the main reason the advanced corner-mean speed isn't higher. Either raising `lateral_accel_limit` or relaxing the cap to `min(v_wb, α · v_curv)` with `α > 1` would recover this.
 3. **No safety regression** — zero collisions in either condition, lap-time variance unchanged. The health-gated bounded design does what we asked it to: improvements when trusted, passthrough when not.
 
 :::
@@ -483,7 +483,7 @@ ECE 484 measures F1Tenth teams against **Milestone 2 (software) complete** and *
     <div style="height:7px;background:#e0e0e0;border-radius:3px;overflow:hidden;"><div style="height:100%;width:100%;background:#4a6cf7;border-radius:3px;"></div></div>
   </div>
   <div style="margin-bottom:14px;">
-    <div style="display:flex;justify-content:space-between;font-size:0.92rem;color:#333;margin-bottom:4px;"><span>eoh PID wall-follower in simulation</span><span>100%</span></div>
+    <div style="display:flex;justify-content:space-between;font-size:0.92rem;color:#333;margin-bottom:4px;"><span>Wall-Balance PID in simulation</span><span>100%</span></div>
     <div style="height:7px;background:#e0e0e0;border-radius:3px;overflow:hidden;"><div style="height:100%;width:100%;background:#4a6cf7;border-radius:3px;"></div></div>
   </div>
   <div style="margin-bottom:14px;">
@@ -522,7 +522,7 @@ ECE 484 measures F1Tenth teams against **Milestone 2 (software) complete** and *
 
 ::: {.content-text}
 
-**Don't replace a working controller — extend it.** The pure-quadfit first pass was *worse* than eoh on exactly the kinds of corners eoh was tuned for. Keeping eoh as an always-on inner loop and making the fit layer a strictly-bounded perturbation gave us all the upside (smoother straights, corner entry prediction) with a hard guarantee that we never lose the floor.
+**Don't replace a working controller — extend it.** The pure-quadfit first pass was *worse* than the Wall-Balance baseline on exactly the kinds of corners Wall-Balance was tuned for. Keeping Wall-Balance as an always-on inner loop and making the fit layer a strictly-bounded perturbation gave us all the upside (smoother straights, corner entry prediction) with a hard guarantee that we never lose the floor.
 
 **Multi-frame gating matters more than sanity checks.** Per-frame sanity (MAD reject, coefficient bounds) removed ~10 % of bad fits. The *multi-frame* gates (sign-of-`b` consistency, σ-of-`b` stability) removed the catastrophic ones — the corner-entry b-flips that actually caused crashes. Ordered correctly, the cost of the gate is zero: it just delays the augmentation by K scans, 12 ms at 250 Hz, which the car doesn't notice.
 
@@ -547,7 +547,7 @@ ECE 484 measures F1Tenth teams against **Milestone 2 (software) complete** and *
 
 **Hardware bring-up (weeks of Apr 21 – May 2).** Port the tuned simulator params to the physical F1Tenth chassis, validate on the CSL Studio test track. The hardware drive/scan topics match the sim exactly — we expect the controller code to transfer unmodified; the tuning work is on `speed_gain` and `max_speed` given real-world tire friction.
 
-**Relax the curvature cap.** The pocket study showed the cap is ~30 % too conservative. Options: (a) raise `lateral_accel_limit` from 4.5 m/s² (its current value in yaml; study run was at 2.0) once we have real-car tire-grip data; (b) gate the cap to only apply when `|κ|` has been stable for a window, same trick as the heading FF; (c) soften the cap to `min(v_eoh, α · v_curv)` with `α ≈ 1.2`.
+**Relax the curvature cap.** The pocket study showed the cap is ~30 % too conservative. Options: (a) raise `lateral_accel_limit` from 4.5 m/s² (its current value in yaml; study run was at 2.0) once we have real-car tire-grip data; (b) gate the cap to only apply when `|κ|` has been stable for a window, same trick as the heading FF; (c) soften the cap to `min(v_wb, α · v_curv)` with `α ≈ 1.2`.
 
 **Enable the EMA smoother on hardware.** `steer_tau` and `speed_tau` are wired up but off (tau=0) in simulation because the 250 Hz scan rate is already smooth. On hardware with a 40–100 Hz effective rate and motor-controller latency, a small `tau ≈ 50 ms` will likely reduce command chatter without adding perceptible lag.
 
@@ -570,7 +570,7 @@ ECE 484 measures F1Tenth teams against **Milestone 2 (software) complete** and *
 
 ::: {.content-text}
 
-**Arjun Chainani** — *Controls & integration.* eoh port to ROS 2, quadratic fit / health-window design, parameter tuning across tracks.
+**Arjun Chainani** — *Controls & integration.* Wall-Balance PID implementation in ROS 2, quadratic fit / health-window design, parameter tuning across tracks.
 
 **Sam Lee** — *Simulation & analysis.* Procedural map generation, cross-comparison study harness, CTE / speed / lap analysis pipeline, site.
 
@@ -583,7 +583,7 @@ ECE 484 measures F1Tenth teams against **Milestone 2 (software) complete** and *
 | Week | Period | Milestone | Status |
 |------|--------|-----------|--------|
 | 1–2  | Jan 2026 | Research, architecture, simulator stand-up | ✅ Done |
-| 3–4  | Jan–Feb 2026 | eoh port + ROS 2 package scaffolding | ✅ Done |
+| 3–4  | Jan–Feb 2026 | Wall-Balance PID + ROS 2 package scaffolding | ✅ Done |
 | 5–6  | Feb–Mar 2026 | Procedural maps, quadfit prototype (failed pass) | ✅ Done |
 | 7    | Mar 2026 | Health-gated advanced controller | ✅ Done |
 | 8    | Apr 2026 | Cross-comparison study + writeup | ✅ Done (Apr 21) |
@@ -616,7 +616,7 @@ source install/setup.bash
 # run the autonomy stack against the sim
 ./run.sh all              # sim + lane_follower together
 
-# reproduce the eoh-vs-advanced study
+# reproduce the comparison study
 study/run_comparison.sh 60
 python3 study/analyze.py  # writes study/output/*.png + study/REPORT.md
 ```
